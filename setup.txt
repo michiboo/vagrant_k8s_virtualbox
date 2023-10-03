@@ -1,0 +1,23 @@
+1. sudo kubeadm init --control-plane-endpoint=192.168.205.10 --pod-network-cidr=10.244.0.0/24 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem --apiserver-advertise-address=192.168.205.10
+2. apply kube-flannel yaml with interface changed
+3. kubectl patch node k8s-worker1 -p '{"spec":{"podCIDR":"10.244.1.0/24"}}'
+4. checking DNS - delete everything except nameserver <dns server> in /etc/resolv.conf
+nameserver 10.96.0.10
+5. if cni collusion - on worker node - 
+ifconfig cni0 down
+ip link delete cni0
+6. to ping from master to worker pod
+edit etc/hosts on master
+192.168.205.11 k8s-worker1 k8s-worker1
+sudo route add -net 10.244.1.0/24 gw k8s-worker1
+7. install metric server
+curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml 
+add  "- --kubelet-insecure-tls" in deployment.spec.template.spec.containers.args.
+check kubectl top pods 
+8. run deployment and then expose it to check if dns work by running nslookup <ip address>
+kubectl create deploy nginx --image=nginx -r 2
+kubectl expose deployment nginx --name=nginx --port=80 --target-port=80
+9. create service nodeport with targetport 8080 to nodeport(out) 30000 with selector for deploy
+test if you can get webpage on host machine - external_nginx.yaml
+10. kubectl exec -it <pod-name> -n <namespace> -- bash - to test execute command on pods
+ kubectl run tmp --image=busybox --restart=Never -it --rm
